@@ -38,7 +38,7 @@ class MultiAgentEnv(object):
         """Performs resetting of the environment."""
         raise NotImplementedError
 
-    @partial(jax.jit, static_argnums=(0,))
+    # @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         key: chex.PRNGKey,

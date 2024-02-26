@@ -1,28 +1,53 @@
 from collections import OrderedDict
 from enum import IntEnum
-
 import numpy as np
 import jax
 import jax.numpy as jnp
 from jax import lax
-from jaxmarl.environments import MultiAgentEnv
-from jaxmarl.environments import spaces
+
+import sys
+import os
+
+# Get the current directory of the script
+import sys
+sys.path.append('/Users/anushamishra/Documents/Human-AI Research/Overcooked/JaxMARL/jaxmarl/environments')
+
+import spaces
+from multi_agent_env import MultiAgentEnv
+# import jaxmarl.environments.overcooked.common
+# from .environments.multi_agent_env import 
+# from . import spaces
+# from . import multi_agent_env
+
+from spaces import Space
 from typing import Tuple, Dict
 import chex
 from flax import struct
 from flax.core.frozen_dict import FrozenDict
 
-from jaxmarl.environments.overcooked.common import (
+
+# from jaxmarl.environments.overcooked import common
+# import common
+
+
+from common import (
     OBJECT_TO_INDEX,
     COLOR_TO_INDEX,
     OBJECT_INDEX_TO_VEC,
     DIR_TO_VEC,
     make_overcooked_map)
-from jaxmarl.environments.overcooked.layouts import overcooked_layouts as layouts
 
+from layouts import overcooked_layouts as layouts
 
 class Actions(IntEnum):
     # Turn left, turn right, move forward
+    # right = 2
+    # down = 1
+    # left = 3
+    # up = 0
+    # stay = 4
+    # interact = 5
+    # done = 6
     right = 0
     down = 1
     left = 2
@@ -31,6 +56,7 @@ class Actions(IntEnum):
     interact = 5
     done = 6
 
+DIR_2_VEC = DIR_TO_VEC
 
 @struct.dataclass
 class State:
@@ -66,7 +92,6 @@ class Overcooked(MultiAgentEnv):
     ):
         # Sets self.num_agents to 2
         super().__init__(num_agents=2)
-
         # self.obs_shape = (agent_view_size, agent_view_size, 3)
         # Observations given by 26 channels, most of which are boolean masks
         self.height = layout["height"]
@@ -637,3 +662,16 @@ class Overcooked(MultiAgentEnv):
 
     def max_steps(self) -> int:
         return self.max_steps
+cramped_room = {
+    "height" : 4,
+    "width" : 5,
+    "wall_idx" : jnp.array([0,1,2,3,4,
+                            5,9,
+                            10,14,
+                            15,16,17,18,19]),
+    "agent_idx" : jnp.array([6, 8]),
+    "goal_idx" : jnp.array([18]),
+    "plate_pile_idx" : jnp.array([16]),
+    "onion_pile_idx" : jnp.array([5,9]),
+    "pot_idx" : jnp.array([2])
+}
