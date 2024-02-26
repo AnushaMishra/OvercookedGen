@@ -5,7 +5,7 @@ import numpy as np
 from window import Window
 import grid_rendering as rendering
 import sys
-sys.path.append('/Users/anushamishra/Documents/Human-AI Research/Anusha/JaxMARL/jaxmarl')  # Add environments directory to sys.path
+sys.path.append('/Users/anushamishra/Documents/Human-AI Research/Overcooked/JaxMARL/jaxmarl')  # Add environments directory to sys.path
 # import environments.overcooked
 from environments.overcooked.common import OBJECT_TO_INDEX, COLOR_TO_INDEX, COLORS
 # from .overcooked.common import OBJECT_TO_INDEX, COLOR_TO_INDEX, COLORS

@@ -6,23 +6,27 @@ import jax.numpy as jnp
 import numpy as np
 
 # from overcooked_visualizer import OvercookedVisualizer as Visualizer
-
-# from jaxmarl.gridworld.maze import Maze #, Actions
-# from jaxmarl.gridworld.ma_maze import MAMaze
-# from jaxmarl.environments.overcooked import overcooked
-# from jaxmarl.environments.overcooked.overcooked import Overcooked
-# from viz.overcooked_visualizer import OvercookedVisualizer as Visualizer
-import overcooked
-from overcooked import Overcooked
+import importlib
 
 import sys
-sys.path.append('/Users/anushamishra/Documents/Human-AI Research/Anusha/JaxMARL/jaxmarl/viz')
-import overcooked_visualizer
-# importlib.reload(overcooked)
+
+# Print the modules currently loaded in sys.modules
+# for module in sys.modules:
+#     print(module)
+
+# import overcooked
+
+from overcooked import Overcooked
+# importlib.reload(Overcooked)
+
+
+import sys
+sys.path.append('/Users/anushamishra/Documents/Human-AI Research/Overcooked/JaxMARL/jaxmarl/viz')
+from overcooked_visualizer import OvercookedVisualizer
 from layouts import overcooked_layouts as layouts
 
-# Example action: moving agent 0 to the right
-action = overcooked.Actions.right
+import course_gen as course
+
 
 def redraw(state, obs, extras):
     extras['viz'].render(extras['agent_view_size'], state, highlight=False)
@@ -45,13 +49,59 @@ def reset(key, env, extras):
 
     redraw(state, obs, extras)
 
+def stepcourse(env, action_dict, extras):
+    key, subkey = jax.random.split(extras['rng'])
+
+    for action_1, action_2 in zip(action_dict['actions_1'], action_dict['actions_2']):
+        actions = {"agent_0": jnp.array(action_1), "agent_1": jnp.array(action_2)}
+        print("Actions : ", actions)
+        obs, state, reward, done, info = jax.jit(env.step_env)(subkey, extras['state'], actions)
+        extras['obs'] = obs
+        extras['state'] = state
+        print(f"t={state.time}: reward={reward['agent_0']}, agent_dir={state.agent_dir_idx}, agent_inv={state.agent_inv}, done = {done['__all__']}")
+
+        if extras["debug"]:
+            layers = [f"player_{i}_loc" for i in range(2)]
+            layers.extend([f"player_{i // 4}_orientation_{i % 4}" for i in range(8)])
+            layers.extend([
+                "pot_loc",
+                "counter_loc",
+                "onion_disp_loc",
+                "tomato_disp_loc",
+                "plate_disp_loc",
+                "serve_loc",
+                "onions_in_pot",
+                "tomatoes_in_pot",
+                "onions_in_soup",
+                "tomatoes_in_soup",
+                "soup_cook_time_remaining",
+                "soup_done",
+                "plates",
+                "onions",
+                "tomatoes",
+                "urgency"
+            ])
+            # print("obs_shape: ", obs["agent_0"].shape)
+            # print("OBS: \n", obs["agent_0"])
+            debug_obs = jnp.transpose(obs["agent_0"], (2, 0, 1))
+            for i, layer in enumerate(layers):
+                print(layer)
+                print(debug_obs[i])
+
+        if done["__all__"] or (jnp.array([action_1, action_2]) == Actions.done).any():
+            key, subkey = jax.random.split(subkey)
+            reset(subkey, env, extras)
+            break  # Exit the loop if any agent is done
+        else:
+            redraw(state, obs, extras)
+
+    extras['rng'] = key
 
 def step(env, action, extras):
     key, subkey = jax.random.split(extras['rng'])
 
     actions = {"agent_0" : jnp.array(action), "agent_1" : jnp.array(action)}
     print("Actions : ", actions)
-    # print("Env: ", DIR_TO_VEC[state.agent_dir_idx])
     obs, state, reward, done, info = jax.jit(env.step_env)(subkey, extras['state'], actions)
     # print("Env: ", state.agent_dir_idx)
     extras['obs'] = obs
@@ -79,16 +129,14 @@ def step(env, action, extras):
             "tomatoes",
             "urgency"
         ])
-        print("obs_shape: ", obs["agent_0"].shape)
-        print("OBS: \n", obs["agent_0"])
+        # print("obs_shape: ", obs["agent_0"].shape)
+        # print("OBS: \n", obs["agent_0"])
         debug_obs = jnp.transpose(obs["agent_0"], (2,0,1))
         for i, layer in enumerate(layers):
             print(layer)
             print(debug_obs[i])
-    # print(f"agent obs =\n {obs}")
 
     if done["__all__"] or (jnp.array([action, action]) == Actions.done).any():
-        print("I got done")
         key, subkey = jax.random.split(subkey)
         reset(subkey, env, extras)
     else:
@@ -146,6 +194,10 @@ def key_handler_overcooked(env, extras, event):
     if event.key == 'left':
         step(env, Actions.left, extras)
         return
+    if event.key == "g":
+        random_acts = course.read_action_n_from_file("random_actions.txt", 1)
+        stepcourse(env,random_acts,extras)
+        return 
     if event.key == 'right':
         step(env, Actions.right, extras)
         return
@@ -266,7 +318,6 @@ if __name__ == '__main__':
                 random_reset=args.random_reset
             )
             # env = Overcooked(layout=layout, random_reset=True, max_steps=400)
-            print("I got here")
         else:
             print("You must provide a layout.")
         from viz.overcooked_visualizer import OvercookedVisualizer as Visualizer
@@ -283,7 +334,7 @@ if __name__ == '__main__':
             obs_viz2 = Visualizer()
 
     with jax.disable_jit(False):
-        print(type(env))
+        # print(type(env))
         jit_reset = jax.jit(env.reset)
         # jit_reset = env.reset_env
         key = jax.random.PRNGKey(args.seed)

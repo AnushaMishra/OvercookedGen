@@ -32,7 +32,6 @@ class MultiAgentEnv(object):
         self.num_agents = num_agents
         self.observation_spaces = dict()
         self.action_spaces = dict()
-        print("MultiAgentEnv")
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey) -> Tuple[Dict[str, chex.Array], State]:
